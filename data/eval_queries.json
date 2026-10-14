@@ -1,0 +1,89 @@
+{
+  "_meta": {
+    "description": "Synthetic retrieval evaluation benchmark for HaqSetu Stage P5.",
+    "notice": "Contains only legitimate synthetic test questions mapped to expected evidence IDs or refusal statuses. No government eligibility rules are fabricated here. All SUPPORTED_MATCH queries target the fictional demo fixture only.",
+    "stage": "P5"
+  },
+  "queries": [
+    {
+      "id": "eval-01",
+      "query": "What is the minimum qualifying exam percentage required for the scholarship?",
+      "scheme_id": "demo-assessable",
+      "include_fictional_demo": true,
+      "expected_status": "SUPPORTED_MATCH",
+      "expected_evidence_id": "ev-001"
+    },
+    {
+      "id": "eval-02",
+      "query": "What score percentage is needed in 12th board?",
+      "scheme_id": "demo-assessable",
+      "include_fictional_demo": true,
+      "expected_status": "SUPPORTED_MATCH",
+      "expected_evidence_id": "ev-001"
+    },
+    {
+      "id": "eval-03",
+      "query": "What is the maximum annual family income limit from all sources?",
+      "scheme_id": "demo-assessable",
+      "include_fictional_demo": true,
+      "expected_status": "SUPPORTED_MATCH",
+      "expected_evidence_id": "ev-002"
+    },
+    {
+      "id": "eval-04",
+      "query": "My parents salary and family earnings are 4 lakh per annum",
+      "scheme_id": "demo-assessable",
+      "include_fictional_demo": true,
+      "expected_status": "SUPPORTED_MATCH",
+      "expected_evidence_id": "ev-002"
+    },
+    {
+      "id": "eval-05",
+      "query": "Must the applicant be enrolled full-time in a UGC recognised institution?",
+      "scheme_id": "demo-assessable",
+      "include_fictional_demo": true,
+      "expected_status": "SUPPORTED_MATCH",
+      "expected_evidence_id": "ev-003"
+    },
+    {
+      "id": "eval-06",
+      "query": "Can I apply if I am already in receipt of another central government scholarship?",
+      "scheme_id": "demo-assessable",
+      "include_fictional_demo": true,
+      "expected_status": "SUPPORTED_MATCH",
+      "expected_evidence_id": "ev-004"
+    },
+    {
+      "id": "eval-07",
+      "query": "What is the exact deadline and income limit for PM-USP Central Sector Scholarship?",
+      "scheme_id": "pmsp-central-sector",
+      "include_fictional_demo": false,
+      "expected_status": "INSUFFICIENT_VERIFIED_EVIDENCE",
+      "expected_evidence_id": null
+    },
+    {
+      "id": "eval-08",
+      "query": "What is the UP Pre-Matric scholarship award amount for Class 9?",
+      "scheme_id": "up-pre-matric-scholarship",
+      "include_fictional_demo": false,
+      "expected_status": "INSUFFICIENT_VERIFIED_EVIDENCE",
+      "expected_evidence_id": null
+    },
+    {
+      "id": "eval-09",
+      "query": "How do I book a railway sleeper ticket and passport appointment?",
+      "scheme_id": "demo-assessable",
+      "include_fictional_demo": true,
+      "expected_status": "NO_RELEVANT_MATCH",
+      "expected_evidence_id": null
+    },
+    {
+      "id": "eval-10",
+      "query": "Will the ministry provide a free laptop and international flight ticket?",
+      "scheme_id": "demo-assessable",
+      "include_fictional_demo": true,
+      "expected_status": "NO_RELEVANT_MATCH",
+      "expected_evidence_id": null
+    }
+  ]
+}

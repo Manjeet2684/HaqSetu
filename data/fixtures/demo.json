@@ -1,0 +1,199 @@
+{
+  "_meta": {
+    "description": "FICTIONAL demonstration data for HaqSetu P1 visual prototype.",
+    "warning": "This file contains entirely invented rules, conditions, evidence, and personas. Nothing here represents verified official scholarship policy. Do not cite this data in any submission document as factual. It exists solely to demonstrate the user interface and workflow.",
+    "data_type": "FICTIONAL_FIXTURE",
+    "last_updated": "P1"
+  },
+  "demo_persona": {
+    "name": "Priya (fictional)",
+    "note": "This is a synthetic demonstration profile. It does not represent a real person or a real eligibility determination."
+  },
+  "scenarios": [
+    {
+      "id": "demo-assessable",
+      "name": "Imaginary Merit Scholarship (Fictional Demo)",
+      "short_name": "Imaginary Merit Scholarship",
+      "issuing_body": "Fictional Ministry of Example Affairs",
+      "readiness": "ASSESSABLE",
+      "data_type": "FICTIONAL_FIXTURE",
+      "fixture_notice": "This scenario uses entirely invented rules. It demonstrates the interface only.",
+      "academic_year": "2024–25 (fictional)",
+      "assessment_outcome": "NEEDS_VERIFICATION",
+      "assessment_summary": "Based on your answers, two conditions are met and one requires verification. This is a preliminary assessment only. The issuing authority makes all official decisions.",
+      "pathways": [
+        {
+          "id": "pathway-merit",
+          "label": "Merit Pathway (fictional)",
+          "result": "NEEDS_VERIFICATION",
+          "conditions": [
+            {
+              "id": "cond-marks",
+              "label": "Scored above 80% in last qualifying exam",
+              "mandatory": true,
+              "result": "PASS",
+              "user_answer": "Yes — 83%",
+              "evidence": {
+                "id": "ev-001",
+                "excerpt": "Clause 4(a): Applicant must have secured not less than 80% marks in the qualifying examination. [FICTIONAL RULE — FOR DEMO ONLY]",
+                "source_label": "Imaginary Scheme Guidelines 2024–25, Section 4",
+                "source_url": null,
+                "verified": false,
+                "fictional": true
+              }
+            },
+            {
+              "id": "cond-income",
+              "label": "Annual family income does not exceed ₹4,50,000",
+              "mandatory": true,
+              "result": "NEEDS_VERIFICATION",
+              "user_answer": "Don't know",
+              "evidence": {
+                "id": "ev-002",
+                "excerpt": "Clause 5(b): Family income from all sources shall not exceed ₹4,50,000 per annum. [FICTIONAL RULE — FOR DEMO ONLY]",
+                "source_label": "Imaginary Scheme Guidelines 2024–25, Section 5",
+                "source_url": null,
+                "verified": false,
+                "fictional": true
+              }
+            },
+            {
+              "id": "cond-enrollment",
+              "label": "Currently enrolled in a recognised degree programme",
+              "mandatory": true,
+              "result": "PASS",
+              "user_answer": "Yes — B.Sc. 2nd year",
+              "evidence": {
+                "id": "ev-003",
+                "excerpt": "Clause 3(c): Applicant must be enrolled full-time in a UGC-recognised institution. [FICTIONAL RULE — FOR DEMO ONLY]",
+                "source_label": "Imaginary Scheme Guidelines 2024–25, Section 3",
+                "source_url": null,
+                "verified": false,
+                "fictional": true
+              }
+            },
+            {
+              "id": "cond-prev-scholarship",
+              "label": "Not currently receiving another central scholarship",
+              "mandatory": true,
+              "result": "FAIL",
+              "user_answer": "No — already receiving PM-USP (fictional)",
+              "evidence": {
+                "id": "ev-004",
+                "excerpt": "Clause 6(d): Benefit shall not be extended to applicants already in receipt of any other central government scholarship. [FICTIONAL RULE — FOR DEMO ONLY]",
+                "source_label": "Imaginary Scheme Guidelines 2024–25, Section 6",
+                "source_url": null,
+                "verified": false,
+                "fictional": true
+              }
+            }
+          ]
+        }
+      ],
+      "action_plan": [
+        {
+          "id": "act-gather-income",
+          "label": "Obtain income certificate from competent authority",
+          "status": "READY",
+          "status_reason": "Priya's enrollment is confirmed. This can proceed now.",
+          "prerequisites": [],
+          "gate_reason": null,
+          "document_type": "Income Certificate"
+        },
+        {
+          "id": "act-gather-marksheet",
+          "label": "Collect attested copy of last qualifying mark sheet",
+          "status": "DONE",
+          "status_reason": "Marked complete by user.",
+          "prerequisites": [],
+          "gate_reason": null,
+          "document_type": "Mark Sheet"
+        },
+        {
+          "id": "act-verify-eligibility",
+          "label": "Confirm all eligibility conditions with the institution's scholarship cell",
+          "status": "BLOCKED",
+          "status_reason": "Income certificate (act-gather-income) is not yet collected.",
+          "prerequisites": ["act-gather-income"],
+          "gate_reason": null,
+          "document_type": null
+        },
+        {
+          "id": "act-submit-application",
+          "label": "Submit application on the official scholarship portal",
+          "status": "GATED",
+          "status_reason": null,
+          "prerequisites": ["act-verify-eligibility"],
+          "gate_reason": "Gated: eligibility is unresolved (income condition not verified). An ineligible or unresolved assessment does not justify submission.",
+          "document_type": null
+        }
+      ],
+      "questionnaire": [
+        {
+          "id": "q-marks",
+          "question": "What percentage did you score in your last qualifying examination?",
+          "type": "radio",
+          "options": [
+            { "value": "above_80", "label": "Above 80%" },
+            { "value": "60_to_80", "label": "60% – 80%" },
+            { "value": "below_60", "label": "Below 60%" },
+            { "value": "unknown", "label": "Don't know" }
+          ],
+          "demo_answer": "above_80",
+          "links_to_condition": "cond-marks"
+        },
+        {
+          "id": "q-income",
+          "question": "What is your family's total annual income from all sources?",
+          "type": "radio",
+          "options": [
+            { "value": "below_450000", "label": "Up to ₹4,50,000" },
+            { "value": "above_450000", "label": "More than ₹4,50,000" },
+            { "value": "unknown", "label": "Don't know" }
+          ],
+          "demo_answer": "unknown",
+          "links_to_condition": "cond-income"
+        },
+        {
+          "id": "q-enrollment",
+          "question": "Are you currently enrolled full-time in a recognised college or university?",
+          "type": "radio",
+          "options": [
+            { "value": "yes", "label": "Yes" },
+            { "value": "no", "label": "No" },
+            { "value": "unknown", "label": "Don't know" }
+          ],
+          "demo_answer": "yes",
+          "links_to_condition": "cond-enrollment"
+        },
+        {
+          "id": "q-other-scholarship",
+          "question": "Are you currently receiving any other central government scholarship?",
+          "type": "radio",
+          "options": [
+            { "value": "yes", "label": "Yes" },
+            { "value": "no", "label": "No" },
+            { "value": "unknown", "label": "Don't know" }
+          ],
+          "demo_answer": "yes",
+          "links_to_condition": "cond-prev-scholarship"
+        }
+      ]
+    },
+    {
+      "id": "demo-listing-only",
+      "name": "PM-USP Central Sector Scholarship (Real Candidate — Stub)",
+      "short_name": "PM-USP Central Sector Scholarship",
+      "issuing_body": "Ministry of Education, Government of India",
+      "readiness": "LISTING_ONLY",
+      "data_type": "REAL_STUB",
+      "fixture_notice": "This is a real scheme candidate. No eligibility rules have been verified. Displayed as LISTING_ONLY until official sources are inspected.",
+      "academic_year": null,
+      "assessment_outcome": null,
+      "assessment_summary": null,
+      "pathways": [],
+      "action_plan": [],
+      "questionnaire": []
+    }
+  ]
+}

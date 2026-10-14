@@ -1,0 +1,81 @@
+{
+  "_meta": {
+    "description": "Synthetic recommendation evaluation benchmark for HaqSetu Stage P9 recommender.",
+    "notice": "All queries are synthetic. Expected scheme IDs are based on catalogue metadata only, not verified eligibility rules.",
+    "total_queries": 12
+  },
+  "queries": [
+    {
+      "id": "rec-01",
+      "query": "scholarship for college student after class 12 central government",
+      "expected_top_id": "pmsp-central-sector",
+      "note": "Central sector, higher education keywords should surface PM-USP first"
+    },
+    {
+      "id": "rec-02",
+      "query": "NSP national scholarship portal merit based award Ministry Education",
+      "expected_top_id": "pmsp-central-sector",
+      "note": "NSP + Ministry of Education direct match"
+    },
+    {
+      "id": "rec-03",
+      "query": "uttar pradesh scholarship school student class 9 10",
+      "expected_top_id": "up-pre-matric-scholarship",
+      "note": "UP + pre-matric class range should surface UP scheme"
+    },
+    {
+      "id": "rec-04",
+      "query": "UP pre matric social welfare department scholarship",
+      "expected_top_id": "up-pre-matric-scholarship",
+      "note": "UP + social welfare explicit match"
+    },
+    {
+      "id": "rec-05",
+      "query": "state government Uttar Pradesh backward class scholarship",
+      "expected_top_id": "up-pre-matric-scholarship",
+      "note": "UP state + backward class keyword"
+    },
+    {
+      "id": "rec-06",
+      "query": "central sector scheme degree UGC recognized university income limit",
+      "expected_top_id": "pmsp-central-sector",
+      "note": "Central sector + UGC university matches PM-USP"
+    },
+    {
+      "id": "rec-07",
+      "query": "government scholarship bsc ba bcom engineering after 12th",
+      "expected_top_id": "pmsp-central-sector",
+      "note": "Undergraduate course keywords"
+    },
+    {
+      "id": "rec-08",
+      "query": "scholarship for girl students UP state school",
+      "expected_top_id": "up-pre-matric-scholarship",
+      "note": "UP school keywords"
+    },
+    {
+      "id": "rec-09",
+      "query": "NSP helpdesk scholarships.gov.in registration",
+      "expected_top_id": "pmsp-central-sector",
+      "note": "NSP portal direct mention"
+    },
+    {
+      "id": "rec-10",
+      "query": "scholarship for minority student school pre-matric",
+      "expected_top_id": "up-pre-matric-scholarship",
+      "note": "pre-matric + school = UP scheme"
+    },
+    {
+      "id": "rec-11",
+      "query": "college scholarship fresh applicant OTR registration NSP portal",
+      "expected_top_id": "pmsp-central-sector",
+      "note": "OTR + NSP = central sector"
+    },
+    {
+      "id": "rec-12",
+      "query": "scholarship for students in class 10 state school UP government",
+      "expected_top_id": "up-pre-matric-scholarship",
+      "note": "Class 10 + UP state school"
+    }
+  ]
+}

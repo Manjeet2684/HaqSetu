@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="HaqSetu — AI Welfare and Scholarship Navigator. From scheme to next step, with evidence." />
+  <title>HaqSetu — AI Scholarship Navigator</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- =====================================================
+       FICTIONAL DATA BANNER
+       Persistent. Always visible. Never dismissable.
+  ====================================================== -->
+  <div class="banner-fixture" role="banner" aria-label="Data notice">
+    <strong>⚠ DEMONSTRATION ONLY:</strong>
+    This prototype uses entirely fictional rules and invented personas.
+    Real scheme candidates are displayed as Listing Only until official sources are verified.
+    Nothing here constitutes official eligibility advice.
+  </div>
+
+  <!-- =====================================================
+       SITE HEADER
+  ====================================================== -->
+  <header class="site-header" role="banner">
+    <div class="page-wrapper">
+      <div class="site-header__logo">
+        <!-- Setu arch motif — inline SVG, no external request -->
+        <svg class="arch-motif" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"
+             aria-label="HaqSetu arch motif" role="img">
+          <!-- Bridge arch -->
+          <path d="M4 28 Q18 6 32 28" stroke="rgba(255,255,255,0.85)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <!-- Bridge deck -->
+          <line x1="3" y1="28" x2="33" y2="28" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round"/>
+          <!-- Pillars -->
+          <line x1="18" y1="14" x2="18" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="11" y1="21" x2="11" y2="28" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" stroke-linecap="round"/>
+          <line x1="25" y1="21" x2="25" y2="28" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+        <span class="site-header__wordmark">HaqSetu</span>
+      </div>
+      <p class="site-header__tagline">From scheme to next step,<br>with evidence.</p>
+    </div>
+  </header>
+
+  <!-- =====================================================
+       PRELIMINARY GUIDANCE DISCLAIMER
+       Persistent. Always visible.
+  ====================================================== -->
+  <div class="disclaimer-bar" role="note" aria-label="Preliminary guidance disclaimer">
+    <strong>Preliminary guidance only.</strong>
+    Based on your answers and verified conditions — not an official eligibility decision.
+    The issuing authority makes all final determinations.
+  </div>
+
+  <!-- =====================================================
+       MAIN CONTENT AREA
+  ====================================================== -->
+  <main id="main-root" role="main">
+    <div class="main-layout">
+      <div class="page-wrapper">
+
+        <!-- Page heading -->
+        <header class="page-header" style="margin-bottom: 24px;">
+          <h1>Scholarship Navigator</h1>
+          <p style="color: var(--color-muted); margin-top: 6px; font-size: 0.9375rem;">
+            Discover potentially relevant scholarships, understand preliminary eligibility,
+            and follow an evidence-backed path to your next step.
+          </p>
+        </header>
+
+        <!-- Dynamic content injected here by app.js -->
+        <div id="main-content" aria-live="polite" aria-label="Scheme assessment panels">
+          <!-- Loading state shown before JS hydration -->
+          <div class="card state-empty" id="loading-state">
+            <span class="state-empty__icon" aria-hidden="true">⏳</span>
+            <div class="state-empty__title">Loading schemes…</div>
+            <div class="state-empty__body">
+              Please wait. If nothing appears, ensure you are serving the project
+              with <code>py -m http.server 8000</code> and visiting
+              <strong>http://localhost:8000</strong>.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- =====================================================
+       SITE FOOTER
+  ====================================================== -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="page-wrapper">
+      <p class="site-footer__text">
+        HaqSetu &mdash; AI Welfare and Scholarship Navigator &mdash;
+        IBM SkillsBuild AI Internship powered by BharatCares &mdash;
+        SDG 4 Quality Education
+      </p>
+      <p class="site-footer__text" style="margin-top: 4px;">
+        Preliminary guidance only. Official decisions are made by the issuing authority.
+        Scheme data is unverified until the human verification checkpoint is complete.
+      </p>
+    </div>
+  </footer>
+
+  <!-- =====================================================
+       APP SCRIPT — loaded last; no defer needed
+  ====================================================== -->
+  <script src="js/app.js"></script>
+
+</body>
+</html>

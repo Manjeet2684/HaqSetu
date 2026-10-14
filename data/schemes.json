@@ -1,0 +1,42 @@
+{
+  "_meta": {
+    "description": "Real scholarship scheme candidates for HaqSetu.",
+    "status_note": "All schemes are LISTING_ONLY. No eligibility rules, conditions, award amounts, income limits, or deadlines have been verified from official sources. A human verification checkpoint must be completed before any scheme becomes ASSESSABLE.",
+    "last_updated": "P1",
+    "data_type": "REAL_STUB"
+  },
+  "schemes": [
+    {
+      "id": "pmsp-central-sector",
+      "name": "Central Sector Scheme of Scholarship for College and University Students",
+      "short_name": "PM-USP Central Sector Scholarship",
+      "ministry": "Ministry of Education, Government of India",
+      "portal": "https://scholarships.gov.in",
+      "readiness": "LISTING_ONLY",
+      "assessment_outcome": null,
+      "verification_note": "Eligibility rules, income limits, marks thresholds, award amounts, deadlines, renewal conditions, and required documents have NOT been verified from official sources for the current academic year. This record is a placeholder only.",
+      "academic_year_verified": null,
+      "official_source_url": null,
+      "official_source_inspected": false,
+      "conditions": [],
+      "required_documents": [],
+      "actions": []
+    },
+    {
+      "id": "up-pre-matric-scholarship",
+      "name": "Uttar Pradesh Pre-Matric Scholarship",
+      "short_name": "UP Pre-Matric Scholarship",
+      "ministry": "Social Welfare Department, Government of Uttar Pradesh",
+      "portal": "https://scholarship.up.gov.in",
+      "readiness": "LISTING_ONLY",
+      "assessment_outcome": null,
+      "verification_note": "The specific scheme variant (General/OBC/SC/ST/Minority), beneficiary category, income limits, class eligibility, renewal rules, award amounts, deadlines, and required documents have NOT been verified from official sources. The exact variant to assess has not yet been selected. This record is a placeholder only.",
+      "academic_year_verified": null,
+      "official_source_url": null,
+      "official_source_inspected": false,
+      "conditions": [],
+      "required_documents": [],
+      "actions": []
+    }
+  ]
+}
