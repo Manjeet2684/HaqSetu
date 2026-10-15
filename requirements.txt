@@ -1,0 +1,4 @@
+# Runtime versions matching the environment in which the application-improvement candidate was tested.
+fastapi==0.141.1
+pydantic==2.13.5
+uvicorn[standard]==0.53.0

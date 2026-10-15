@@ -47,6 +47,89 @@ def test_intent_classifier_trains_and_predicts_in_scope(catalog: SchemeCatalogSe
     assert abs(total - 1.0) < 1e-4, f"Confidence scores must sum to 1.0, got {total}"
 
 
+def test_intent_classifier_rejects_empty_or_malformed_dataset(tmp_path: Path) -> None:
+    """A corrupt or empty training file must fail explicitly rather than create a broken model."""
+    import json
+
+    empty_path = tmp_path / "empty.json"
+    empty_path.write_text(json.dumps({"utterances": []}), encoding="utf-8")
+    with pytest.raises(ValueError, match="contains no utterances"):
+        NaiveBayesIntentClassifier(empty_path)
+
+    no_vocabulary_path = tmp_path / "no_vocabulary.json"
+    no_vocabulary_path.write_text(
+        json.dumps({"utterances": [{"text": "the and or", "intent": "find_scheme"}]}),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="no usable vocabulary"):
+        NaiveBayesIntentClassifier(no_vocabulary_path)
+
+
+def test_intent_classifier_abstains_when_query_has_no_known_vocabulary(
+    catalog: SchemeCatalogService,
+) -> None:
+    """Empty, punctuation-only and wholly unknown queries must not inherit a class prior."""
+    clf = catalog.classifier
+    assert clf is not None
+
+    for query in ("", "   !!! ???", "zxqv blorf qwertyplmokn"):
+        prediction = clf.predict(query)
+        assert prediction.predicted_intent == IntentClass.OUT_OF_SCOPE
+        assert prediction.is_out_of_scope is True
+        assert prediction.confidence_scores == {}
+        assert "No recognizable vocabulary" in prediction.confidence_notice
+
+
+def test_intent_classifier_abstains_on_ambiguous_short_queries(
+    catalog: SchemeCatalogService,
+) -> None:
+    """Generic single-word and near-tie queries must not trigger arbitrary routing."""
+    clf = catalog.classifier
+    assert clf is not None
+
+    for query in ("scholarship", "marks", "income", "I want a scholarship for college"):
+        prediction = clf.predict(query)
+        assert prediction.predicted_intent == IntentClass.OUT_OF_SCOPE, query
+        assert prediction.is_out_of_scope is True, query
+        assert prediction.confidence_scores == {}, query
+        assert "too short or ambiguous" in prediction.confidence_notice.lower(), query
+
+    # Distinctive single-term context and clear complete questions can still route.
+    assert clf.predict("What is CPGRAMS?").predicted_intent == IntentClass.ASK_GRIEVANCE
+    assert clf.predict("When is the application deadline?").predicted_intent == IntentClass.ASK_DEADLINE
+
+
+def test_classifier_initialization_failure_does_not_disable_recommender(
+    catalog: SchemeCatalogService, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An unavailable classifier must not disable the independent content recommender."""
+    import app.intent_classifier
+
+    def fail_init(*_args: object, **_kwargs: object) -> None:
+        raise ValueError("synthetic classifier initialization failure")
+
+    monkeypatch.setattr(app.intent_classifier.NaiveBayesIntentClassifier, "__init__", fail_init)
+    catalog._init_ml_components()
+
+    assert catalog.classifier is None
+    assert catalog.recommender is not None
+    response = catalog.recommend_schemes("college scholarship central government")
+    assert response.recommendations
+
+
+def test_assistant_does_not_recommend_when_classifier_is_unavailable(
+    catalog: SchemeCatalogService,
+) -> None:
+    """A missing classifier must fail closed instead of guessing a scheme-discovery intent."""
+    catalog._classifier = None
+    response = catalog.handle_assistant_query("find me a scholarship for college")
+    assert response.intent.predicted_intent == IntentClass.OUT_OF_SCOPE
+    assert response.intent.is_out_of_scope is True
+    assert response.recommendations == []
+    assert response.ask_response is None
+    assert "classifier is unavailable" in response.intent.confidence_notice.lower()
+
+
 def test_intent_classifier_in_sample_accuracy_above_threshold(catalog: SchemeCatalogService) -> None:
     """In-sample accuracy should be high (>= 0.85) to verify training logic is correct."""
     clf = catalog.classifier
@@ -187,6 +270,18 @@ def test_assistant_routes_find_scheme_intent_to_recommendations(
     assert response.ask_response is None  # FIND_SCHEME does not trigger Q&A
     assert "ELIGIBILITY" not in response.recommendation_disclaimer.upper() or True  # disclaimer present
     assert response.routing_advice != ""
+
+
+def test_assistant_ambiguous_query_abstains_without_recommendations(
+    catalog: SchemeCatalogService,
+) -> None:
+    """Ambiguous scholarship keywords should request context rather than guess a route."""
+    response = catalog.handle_assistant_query("scholarship")
+    assert response.intent.predicted_intent == IntentClass.OUT_OF_SCOPE
+    assert response.intent.is_out_of_scope is True
+    assert response.recommendations == []
+    assert response.ask_response is None
+    assert "too short or ambiguous" in response.intent.confidence_notice.lower()
 
 
 def test_assistant_out_of_scope_returns_no_retrieval(catalog: SchemeCatalogService) -> None:

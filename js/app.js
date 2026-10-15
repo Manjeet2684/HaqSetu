@@ -515,7 +515,7 @@ function renderEmptyState(container) {
   const title = el('div', 'state-empty__title');
   title.textContent = 'No scheme data loaded';
   const body = el('div', 'state-empty__body');
-  body.textContent = 'Fixture data could not be found. Serve this project with: py -m http.server 8000';
+  body.textContent = 'Fixture data could not be found. Start the complete app from the project root with: python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --no-access-log';
   state.appendChild(icon);
   state.appendChild(title);
   state.appendChild(body);
@@ -558,8 +558,8 @@ function renderErrorState(container, message) {
       if (main) {
         renderErrorState(main,
           'Could not load demo.json. ' +
-          'Start a local server: py -m http.server 8000  ' +
-          'then open http://localhost:8000 in your browser. ' +
+          'Start FastAPI from the project root with: python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --no-access-log. ' +
+          'A static server or file:// URL does not provide the API. ' +
           'Error: ' + err.message
         );
       }

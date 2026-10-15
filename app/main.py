@@ -8,7 +8,7 @@ from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.catalog import DEFAULT_REPO_ROOT, SchemeCatalogService
@@ -44,9 +44,10 @@ def create_app(
     Create and configure the HaqSetu FastAPI application.
 
     Privacy & Security Design:
-    - Stateless evaluation: applicant answers are never stored on disk or logged.
-    - Enforces 32 KB request body limit and sets defensive HTTP headers (nosniff, DENY).
-    - Strictly separates /api/assess (real schemes only) from /api/demo/assess (fictional demo).
+    - Applicant answers are processed for a request and are not persisted by this application.
+    - Enforces a bounded 32 KB request body and sets defensive HTTP headers.
+    - Separates /api/assess (real schemes only) from /api/demo/assess (fictional demo).
+    - Deployment access logs and reverse-proxy logging require separate configuration review.
     """
     app = FastAPI(
         title="HaqSetu — AI Welfare and Scholarship Navigator",
@@ -76,49 +77,58 @@ def create_app(
 
     @app.middleware("http")
     async def security_and_privacy_middleware(request: Request, call_next: Any) -> Response:
-        """
-        Body-size limit + defensive security headers.
+        """Bound request-body memory use and add defensive response headers."""
 
-        Strategy for requests without Content-Length:
-        We use asyncio.wait_for to bound the body read to a reasonable timeout, then
-        check actual length. This prevents unbounded streaming accumulation.
-        """
+        def apply_security_headers(response: Response) -> Response:
+            response.headers["X-Content-Type-Options"] = "nosniff"
+            response.headers["X-Frame-Options"] = "DENY"
+            response.headers["Referrer-Policy"] = "no-referrer"
+            response.headers["Cache-Control"] = "no-store"
+            return response
+
+        def error_response(status_code: int, message: str) -> JSONResponse:
+            return apply_security_headers(
+                JSONResponse(status_code=status_code, content={"detail": message})
+            )  # type: ignore[return-value]
+
         content_length_header = request.headers.get("content-length")
         if content_length_header is not None:
             try:
-                cl = int(content_length_header)
+                content_length = int(content_length_header)
             except (ValueError, OverflowError):
-                return JSONResponse(
-                    status_code=400,
-                    content={"detail": "Malformed Content-Length header."},
-                )
-            if cl > MAX_REQUEST_BODY_BYTES:
-                return JSONResponse(
-                    status_code=413,
-                    content={"detail": "Request payload exceeds the 32 KB maximum size limit."},
-                )
+                return error_response(400, "Malformed Content-Length header.")
+            if content_length < 0:
+                return error_response(400, "Malformed Content-Length header.")
+            if content_length > MAX_REQUEST_BODY_BYTES:
+                return error_response(413, "Request payload exceeds the 32 KB maximum size limit.")
 
-        # Read the body and check actual length (handles chunked/no-length requests too).
-        # We bound with a short timeout to avoid stalling on slow large uploads.
+        async def read_bounded_body() -> bytes | None:
+            """Read chunks incrementally and stop before buffering beyond the limit."""
+            chunks: list[bytes] = []
+            total_bytes = 0
+            async for chunk in request.stream():
+                if not chunk:
+                    continue
+                total_bytes += len(chunk)
+                if total_bytes > MAX_REQUEST_BODY_BYTES:
+                    return None
+                chunks.append(chunk)
+            body = b"".join(chunks)
+            # Starlette's BaseHTTPMiddleware passes the cached body to downstream handlers.
+            # This allows FastAPI/Pydantic to parse the already-bounded request normally.
+            request._body = body  # type: ignore[attr-defined]
+            return body
+
         try:
-            body_bytes: bytes = await asyncio.wait_for(request.body(), timeout=10.0)
+            body_bytes = await asyncio.wait_for(read_bounded_body(), timeout=10.0)
         except asyncio.TimeoutError:
-            return JSONResponse(
-                status_code=413,
-                content={"detail": "Request body read timed out (payload too large or slow)."},
-            )
-        if len(body_bytes) > MAX_REQUEST_BODY_BYTES:
-            return JSONResponse(
-                status_code=413,
-                content={"detail": "Request payload exceeds the 32 KB maximum size limit."},
-            )
+            return error_response(408, "Request body was not received within the allowed time.")
+
+        if body_bytes is None:
+            return error_response(413, "Request payload exceeds the 32 KB maximum size limit.")
 
         response: Response = await call_next(request)
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
-        response.headers["Referrer-Policy"] = "no-referrer"
-        response.headers["Cache-Control"] = "no-store"
-        return response
+        return apply_security_headers(response)
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(
@@ -364,8 +374,10 @@ def create_app(
         """
         return catalog.get_ml_metrics()
 
-    # Mount static directories (css/, js/, data/) and serve index.html with P6 progressive bridge
-    for folder_name in ("css", "js", "data"):
+    # Only the CSS and JavaScript assets are mounted as public directories.
+    # Do not expose the entire /data tree: it also contains training and evaluation
+    # datasets that are needed by the server but not by browser clients.
+    for folder_name in ("css", "js"):
         folder_path = ui_root / folder_name
         if folder_path.exists() and folder_path.is_dir():
             app.mount(
@@ -373,6 +385,16 @@ def create_app(
                 StaticFiles(directory=str(folder_path)),
                 name=f"static_{folder_name}",
             )
+
+    # The older P1 preview fetches this fictional-only fixture. Expose this one
+    # exact file for fallback/demo compatibility instead of mounting all of /data.
+    public_demo_path = Path(demo_path) if demo_path else ui_root / "data" / "fixtures" / "demo.json"
+
+    @app.get("/data/fixtures/demo.json", include_in_schema=False)
+    def get_public_demo_fixture() -> FileResponse:
+        if not public_demo_path.is_file():
+            raise HTTPException(status_code=404, detail="Demo fixture is not available.")
+        return FileResponse(str(public_demo_path), media_type="application/json")
 
     @app.get("/", response_class=HTMLResponse, include_in_schema=False)
     def serve_index() -> HTMLResponse:

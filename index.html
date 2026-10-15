@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="HaqSetu — AI Welfare and Scholarship Navigator. From scheme to next step, with evidence." />
-  <title>HaqSetu — AI Scholarship Navigator</title>
+  <title>HaqSetu — AI Welfare and Scholarship Navigator</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -13,11 +13,10 @@
        FICTIONAL DATA BANNER
        Persistent. Always visible. Never dismissable.
   ====================================================== -->
-  <div class="banner-fixture" role="banner" aria-label="Data notice">
-    <strong>⚠ DEMONSTRATION ONLY:</strong>
-    This prototype uses entirely fictional rules and invented personas.
-    Real scheme candidates are displayed as Listing Only until official sources are verified.
-    Nothing here constitutes official eligibility advice.
+  <div class="banner-fixture" role="note" aria-label="Demonstration and data verification notice">
+    <strong>⚠ DEMONSTRATION NOTICE:</strong>
+    The assessment example uses fictional rules and personas. Real scheme records remain Listing Only until current official sources are verified.
+    Nothing here constitutes an official eligibility decision.
   </div>
 
   <!-- =====================================================
@@ -50,7 +49,7 @@
   ====================================================== -->
   <div class="disclaimer-bar" role="note" aria-label="Preliminary guidance disclaimer">
     <strong>Preliminary guidance only.</strong>
-    Based on your answers and verified conditions — not an official eligibility decision.
+    HaqSetu provides preliminary guidance only. Listing Only schemes cannot receive automated eligibility outcomes until current policy rules are verified.
     The issuing authority makes all final determinations.
   </div>
 
@@ -62,11 +61,12 @@
       <div class="page-wrapper">
 
         <!-- Page heading -->
-        <header class="page-header" style="margin-bottom: 24px;">
-          <h1>Scholarship Navigator</h1>
-          <p style="color: var(--color-muted); margin-top: 6px; font-size: 0.9375rem;">
-            Discover potentially relevant scholarships, understand preliminary eligibility,
-            and follow an evidence-backed path to your next step.
+        <header class="page-header">
+          <p class="page-header__eyebrow">HAQSETU · SCHOLARSHIP NAVIGATOR</p>
+          <h1>From scholarship questions to clearer next steps.</h1>
+          <p class="page-header__description">
+            Explore scheme records, understand what is verified, and use evidence-backed guidance
+            to decide what to do next. HaqSetu offers preliminary guidance, not official eligibility decisions.
           </p>
         </header>
 
@@ -77,9 +77,9 @@
             <span class="state-empty__icon" aria-hidden="true">⏳</span>
             <div class="state-empty__title">Loading schemes…</div>
             <div class="state-empty__body">
-              Please wait. If nothing appears, ensure you are serving the project
-              with <code>py -m http.server 8000</code> and visiting
-              <strong>http://localhost:8000</strong>.
+              Please wait. For the complete application, start FastAPI from the project root with
+              <code>python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --no-access-log</code>
+              and open <strong>http://127.0.0.1:8000/</strong>. A static server or file:// URL does not provide the API.
             </div>
           </div>
         </div>

@@ -18,6 +18,48 @@ def client() -> TestClient:
     return TestClient(app)
 
 
+
+
+def test_homepage_serves_live_bridge_assets_exactly_once(client: TestClient) -> None:
+    """FastAPI serves the frontend shell and injects the P6/P9 integration once."""
+    response = client.get("/")
+    assert response.status_code == 200
+    html = response.text
+    assert html.count('href="/css/haqsetu_p6_enhancements.css"') == 1
+    assert html.count('src="/js/haqsetu_api_client.js"') == 1
+    assert "py -m http.server 8000" not in html
+    assert "uvicorn app.main:app" in html
+
+
+def test_oversized_chunked_request_is_rejected(client: TestClient) -> None:
+    """Body-size enforcement must also reject a large request without Content-Length."""
+    response = client.post(
+        "/api/ask",
+        content=b"x" * 40_000,
+        headers={
+            "Content-Type": "application/json",
+            "Transfer-Encoding": "chunked",
+        },
+    )
+    assert response.status_code == 413
+    assert response.headers.get("X-Content-Type-Options") == "nosniff"
+
+def test_public_data_route_exposes_only_the_fictional_demo_fixture(client: TestClient) -> None:
+    """The browser may load its demo fixture, but training/evaluation data must not be public."""
+    fixture = client.get("/data/fixtures/demo.json")
+    assert fixture.status_code == 200
+    assert "demo-assessable" in fixture.text
+    assert "application/json" in fixture.headers.get("content-type", "")
+
+    for private_data_path in (
+        "/data/schemes.json",
+        "/data/eval_queries.json",
+        "/data/ml/intent_dataset.json",
+        "/data/ml/recommendation_eval.json",
+    ):
+        assert client.get(private_data_path).status_code == 404, private_data_path
+
+
 def test_health_endpoint_and_security_headers(client: TestClient) -> None:
     """GET /api/health returns 200 OK, accurate counts, and defensive HTTP headers."""
     resp = client.get("/api/health")

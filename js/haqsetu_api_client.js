@@ -66,14 +66,40 @@
     if (existing) { return existing; }
     var container = el("section", "hs-p6-workspace");
     container.id = "hs-p6-live-workspace";
-    container.setAttribute("aria-label", "HaqSetu Live Backend — Discovery, Assessment, Q&A, and AI Assistant");
-    document.body.appendChild(container);
+    container.setAttribute("aria-label", "HaqSetu live scholarship navigation workspace");
+
+    // Place live API-backed features inside the main page flow, before the
+    // legacy static preview. This keeps the footer at the end of the page.
+    var mainContent = document.getElementById("main-content");
+    if (mainContent && mainContent.parentNode) {
+      mainContent.parentNode.insertBefore(container, mainContent);
+    } else {
+      var mainRoot = document.getElementById("main-root");
+      (mainRoot || document.body).appendChild(container);
+    }
     return container;
+  }
+
+  function wireEnterKey(input, button) {
+    input.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        button.click();
+      }
+    });
   }
 
   async function fetchJson(url, options) {
     var response = await fetch(url, options || {});
-    var data = await response.json();
+    var data;
+    try {
+      data = await response.json();
+    } catch (_parseError) {
+      if (!response.ok) {
+        throw new Error("Request failed (HTTP " + response.status + "); the server returned a non-JSON error response.");
+      }
+      throw new Error("The server returned an unreadable response. Please retry.");
+    }
     if (!response.ok) {
       var detail = (data && data.detail) ? data.detail : ("HTTP " + response.status);
       throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
@@ -81,13 +107,42 @@
     return data;
   }
 
+  function buildWorkspaceIntro(root) {
+    var intro = el("section", "hs-p6-intro");
+    intro.appendChild(el("p", "hs-p6-eyebrow", "THE HAQSETU JOURNEY"));
+    intro.appendChild(el("p", "hs-p6-intro-copy",
+      "Discover opportunities, understand the evidence, and prepare your next step."
+    ));
+
+    var nav = el("nav", "hs-p6-quick-nav");
+    nav.setAttribute("aria-label", "Navigate HaqSetu features");
+    [
+      ["hs-section-schemes", "Discover schemes"],
+      ["hs-section-recommendations", "Get recommendations"],
+      ["hs-section-assistant", "Ask the assistant"],
+      ["hs-section-policy", "Explore evidence"],
+      ["hs-section-demo", "Try fictional demo"],
+      ["hs-section-metrics", "Technical evaluation"]
+    ].forEach(function (item) {
+      var link = el("a", "hs-p6-quick-link", item[1]);
+      link.href = "#" + item[0];
+      nav.appendChild(link);
+    });
+    intro.appendChild(nav);
+    intro.appendChild(el("p", "hs-p6-intro-note",
+      "Real scheme records remain listing-only until current official rules are human-verified. The demo uses invented rules."
+    ));
+    root.appendChild(intro);
+  }
+
   // ---------------------------------------------------------------------------
   // Demo Assessment Panel
   // ---------------------------------------------------------------------------
   function buildDemoAssessPanel(root) {
     var section = el("div", "hs-p6-section");
+    section.id = "hs-section-demo";
     var header = el("div", "hs-p6-header-row");
-    header.appendChild(el("h2", "hs-p6-title", "Fictional Demo Assessment (POST /api/demo/assess)"));
+    header.appendChild(el("h2", "hs-p6-title", "Try a fictional assessment"));
     header.appendChild(el("span", "hs-p6-badge", "FICTIONAL DEMO ONLY"));
     section.appendChild(header);
 
@@ -97,27 +152,42 @@
     ));
 
     var controls = el("div", "hs-p6-controls-grid");
-    var answerNote = el("p", null,
-      "Pre-filled with passing answers for demo-assessable. Adjust to see INELIGIBLE / NEEDS_VERIFICATION."
+    var answerNote = el("p", "hs-p6-section-copy",
+      "Explore how a rules-based assessment responds to different answers. Every rule in this scenario is invented for demonstration only."
     );
     section.appendChild(answerNote);
 
-    // Preset answers
-    var presets = {
-      "q-marks": "above_80",
-      "q-income": "below_450000",
-      "q-enrollment": "yes",
-      "q-other-scholarship": "no"
-    };
+    // Friendly controls preserve the exact answer tokens expected by the demo API.
+    var questions = [
+      { id: "q-marks", label: "Qualifying exam result", value: "above_80", options: [
+        ["above_80", "Above 80%"], ["60_to_80", "60%–80%"], ["below_60", "Below 60%"], ["unknown", "I don't know"]
+      ]},
+      { id: "q-income", label: "Annual family income", value: "below_450000", options: [
+        ["below_450000", "Up to ₹4,50,000"], ["above_450000", "More than ₹4,50,000"], ["unknown", "I don't know"]
+      ]},
+      { id: "q-enrollment", label: "Currently enrolled full-time", value: "yes", options: [
+        ["yes", "Yes"], ["no", "No"], ["unknown", "I don't know"]
+      ]},
+      { id: "q-other-scholarship", label: "Receiving another central scholarship", value: "no", options: [
+        ["yes", "Yes"], ["no", "No"], ["unknown", "I don't know"]
+      ]}
+    ];
     var answerInputs = {};
-    Object.keys(presets).forEach(function (key) {
-      var wrap = el("div", null);
-      wrap.appendChild(el("label", null, key + ": "));
-      var inp = el("input", "hs-p6-input");
-      inp.type = "text";
-      inp.value = presets[key];
-      inp.setAttribute("aria-label", "Answer for " + key);
-      answerInputs[key] = inp;
+    questions.forEach(function (question) {
+      var wrap = el("div", "hs-p6-field");
+      var label = el("label", "hs-p6-field-label", question.label);
+      var inp = el("select", "hs-p6-select");
+      inp.id = "hs-demo-" + question.id;
+      label.htmlFor = inp.id;
+      inp.setAttribute("aria-label", question.label);
+      question.options.forEach(function (option) {
+        var choice = el("option", null, option[1]);
+        choice.value = option[0];
+        if (option[0] === question.value) { choice.selected = true; }
+        inp.appendChild(choice);
+      });
+      answerInputs[question.id] = inp;
+      wrap.appendChild(label);
       wrap.appendChild(inp);
       controls.appendChild(wrap);
     });
@@ -127,6 +197,8 @@
     section.appendChild(runBtn);
 
     var output = el("div", null);
+    output.setAttribute("aria-live", "polite");
+    output.setAttribute("aria-atomic", "false");
     section.appendChild(output);
     root.appendChild(section);
 
@@ -147,7 +219,8 @@
         if (res.fictional_warning) {
           output.appendChild(el("div", "hs-p6-warning-banner", res.fictional_warning));
         }
-        output.appendChild(el("p", null, "Outcome: " + (res.applicant_outcome || "null (LISTING_ONLY)")));
+        output.appendChild(el("div", "hs-p6-result-summary",
+          "Demonstration outcome: " + (res.applicant_outcome || "No outcome (LISTING_ONLY)")));
         output.appendChild(el("p", null, res.summary));
 
         if (res.action_plan && res.action_plan.length > 0) {
@@ -270,8 +343,10 @@
   // ---------------------------------------------------------------------------
   function buildDiscoverySection(root) {
     var discSection = el("div", "hs-p6-section");
+    discSection.id = "hs-section-schemes";
     var discHeader = el("div", "hs-p6-header-row");
-    discHeader.appendChild(el("h2", "hs-p6-title", "Real Scheme Catalogue & Verification Status"));
+    discHeader.appendChild(el("h2", "hs-p6-title", "Explore real scheme records"));
+    discHeader.appendChild(el("span", "hs-p6-badge", "Verification status shown"));
     discSection.appendChild(discHeader);
 
     var controls = el("div", "hs-p6-controls-grid");
@@ -284,22 +359,27 @@
     readinessSelect.setAttribute("aria-label", "Filter by readiness");
     [
       { value: "", label: "All Readiness States" },
-      { value: "LISTING_ONLY", label: "LISTING_ONLY" },
-      { value: "ASSESSABLE", label: "ASSESSABLE" }
+      { value: "LISTING_ONLY", label: "Listing only — verification pending" },
+      { value: "ASSESSABLE", label: "Assessable — rules verified" }
     ].forEach(function (opt) {
       var o = el("option", null, opt.label);
       o.value = opt.value;
       readinessSelect.appendChild(o);
     });
 
-    var searchBtn = el("button", "hs-p6-button", "Filter Catalogue");
+    var searchBtn = el("button", "hs-p6-button", "Search schemes");
     controls.appendChild(searchInput);
     controls.appendChild(readinessSelect);
     controls.appendChild(searchBtn);
+    wireEnterKey(searchInput, searchBtn);
     discSection.appendChild(controls);
 
     var schemeListBox = el("div", null);
+    schemeListBox.setAttribute("aria-live", "polite");
+    schemeListBox.setAttribute("aria-atomic", "false");
     var schemeDetailBox = el("div", "hs-p6-passage-card");
+    schemeDetailBox.setAttribute("aria-live", "polite");
+    schemeDetailBox.setAttribute("aria-atomic", "false");
     discSection.appendChild(schemeListBox);
     discSection.appendChild(schemeDetailBox);
     root.appendChild(discSection);
@@ -315,8 +395,8 @@
         var schemes = await fetchJson(url);
         clearChildren(schemeListBox);
         if (!schemes || schemes.length === 0) {
-          schemeListBox.appendChild(el("p", null, "No schemes matched your filter."));
-          return;
+          schemeListBox.appendChild(el("p", "hs-p6-empty-state", "No schemes matched those filters. Try a broader search."));
+          return true;
         }
         var btnRow = el("div", "hs-p6-controls-grid");
         schemes.forEach(function (s) {
@@ -336,10 +416,12 @@
         schemeListBox.appendChild(btnRow);
         var firstDetail = await fetchJson("/api/schemes/" + encodeURIComponent(schemes[0].id));
         renderSchemeDetailPanel(schemeDetailBox, firstDetail);
+        return true;
       } catch (err) {
         clearChildren(schemeListBox);
-        schemeListBox.appendChild(el("p", null,
-          "Backend offline or unreachable (" + err.message + "). Static P1 mode remains active."));
+        schemeListBox.appendChild(el("p", "hs-p6-error-state",
+          "We couldn't connect to the scheme catalogue. " + err.message + " You can retry using Search schemes."));
+        return false;
       }
     }
 
@@ -352,8 +434,10 @@
   // ---------------------------------------------------------------------------
   function buildQASection(root) {
     var askSection = el("div", "hs-p6-section");
+    askSection.id = "hs-section-policy";
     var askHeader = el("div", "hs-p6-header-row");
-    askHeader.appendChild(el("h2", "hs-p6-title", "Policy Q&A (TF-IDF Retrieval, POST /api/ask)"));
+    askHeader.appendChild(el("h2", "hs-p6-title", "Ask about a policy clause"));
+    askHeader.appendChild(el("span", "hs-p6-badge", "Evidence-grounded search"));
     askSection.appendChild(askHeader);
 
     var askControls = el("div", "hs-p6-controls-grid");
@@ -374,13 +458,16 @@
       scopeSelect.appendChild(o);
     });
 
-    var askBtn = el("button", "hs-p6-button", "Search Policy Clauses");
+    var askBtn = el("button", "hs-p6-button", "Search evidence");
     askControls.appendChild(askInput);
     askControls.appendChild(scopeSelect);
     askControls.appendChild(askBtn);
+    wireEnterKey(askInput, askBtn);
     askSection.appendChild(askControls);
 
     var askOutput = el("div", null);
+    askOutput.setAttribute("aria-live", "polite");
+    askOutput.setAttribute("aria-atomic", "false");
     askSection.appendChild(askOutput);
     root.appendChild(askSection);
 
@@ -415,9 +502,10 @@
   // ---------------------------------------------------------------------------
   function buildAssistantSection(root) {
     var section = el("div", "hs-p6-section");
+    section.id = "hs-section-assistant";
     var header = el("div", "hs-p6-header-row");
-    header.appendChild(el("h2", "hs-p6-title", "AI Assistant — Intent + Routing (POST /api/assistant)"));
-    header.appendChild(el("span", "hs-p6-badge", "P9 — Naive Bayes"));
+    header.appendChild(el("h2", "hs-p6-title", "Ask the HaqSetu assistant"));
+    header.appendChild(el("span", "hs-p6-badge", "Intent-guided navigation"));
     section.appendChild(header);
 
     section.appendChild(el("p", null,
@@ -430,12 +518,15 @@
     queryInput.type = "text";
     queryInput.placeholder = "e.g. Am I eligible? / Find me a scholarship / How to file grievance?";
     queryInput.setAttribute("aria-label", "Assistant query");
-    var askBtn = el("button", "hs-p6-button", "Ask Assistant");
+    var askBtn = el("button", "hs-p6-button", "Find the right next step");
     controls.appendChild(queryInput);
     controls.appendChild(askBtn);
+    wireEnterKey(queryInput, askBtn);
     section.appendChild(controls);
 
     var output = el("div", null);
+    output.setAttribute("aria-live", "polite");
+    output.setAttribute("aria-atomic", "false");
     section.appendChild(output);
     root.appendChild(section);
 
@@ -473,10 +564,10 @@
             .slice(0, 4)
             .forEach(function (pair) {
               scoreList.appendChild(el("li", null,
-                pair[0] + ": " + (pair[1] * 100).toFixed(1) + "%"
+                pair[0] + ": " + Number(pair[1]).toFixed(3)
               ));
             });
-          output.appendChild(el("p", null, "Top confidence scores (relative rankings):"));
+          output.appendChild(el("p", "hs-p6-score-note", "Relative class scores (ranking hints, not calibrated probabilities):"));
           output.appendChild(scoreList);
         }
 
@@ -514,9 +605,10 @@
   // ---------------------------------------------------------------------------
   function buildRecommenderSection(root) {
     var section = el("div", "hs-p6-section");
+    section.id = "hs-section-recommendations";
     var header = el("div", "hs-p6-header-row");
-    header.appendChild(el("h2", "hs-p6-title", "Scheme Recommender (POST /api/recommend)"));
-    header.appendChild(el("span", "hs-p6-badge", "P9 — TF-IDF Content-Based"));
+    header.appendChild(el("h2", "hs-p6-title", "Get scheme recommendations"));
+    header.appendChild(el("span", "hs-p6-badge", "Content similarity"));
     section.appendChild(header);
 
     section.appendChild(el("p", null,
@@ -529,12 +621,15 @@
     queryInput.type = "text";
     queryInput.placeholder = "e.g. college scholarship central government";
     queryInput.setAttribute("aria-label", "Recommendation query");
-    var recBtn = el("button", "hs-p6-button", "Get Recommendations");
+    var recBtn = el("button", "hs-p6-button", "Find matching schemes");
     controls.appendChild(queryInput);
     controls.appendChild(recBtn);
+    wireEnterKey(queryInput, recBtn);
     section.appendChild(controls);
 
     var output = el("div", null);
+    output.setAttribute("aria-live", "polite");
+    output.setAttribute("aria-atomic", "false");
     section.appendChild(output);
     root.appendChild(section);
 
@@ -580,9 +675,10 @@
   // ---------------------------------------------------------------------------
   function buildMetricsDashboard(root) {
     var section = el("div", "hs-p6-section");
+    section.id = "hs-section-metrics";
     var header = el("div", "hs-p6-header-row");
-    header.appendChild(el("h2", "hs-p6-title", "ML Benchmark Metrics (GET /api/ml/metrics)"));
-    header.appendChild(el("span", "hs-p6-badge", "P9 — Synthetic Smoke Benchmarks"));
+    header.appendChild(el("h2", "hs-p6-title", "Model and retrieval evaluation"));
+    header.appendChild(el("span", "hs-p6-badge", "Synthetic smoke benchmarks"));
     section.appendChild(header);
 
     section.appendChild(el("div", "hs-p6-warning-banner",
@@ -590,10 +686,12 @@
       "They verify implementation correctness, not real-world generalisation accuracy."
     ));
 
-    var loadBtn = el("button", "hs-p6-button", "Load Benchmark Metrics");
+    var loadBtn = el("button", "hs-p6-button", "View evaluation results");
     section.appendChild(loadBtn);
 
     var output = el("div", null);
+    output.setAttribute("aria-live", "polite");
+    output.setAttribute("aria-atomic", "false");
     section.appendChild(output);
     root.appendChild(section);
 
@@ -651,17 +749,21 @@
   async function initHaqSetuBridge() {
     var root = createWorkspaceContainer();
     clearChildren(root);
+    buildWorkspaceIntro(root);
 
-    // Load all sections
+    // Follow a user-centred journey: discover, explore options, ask, and inspect the demo.
     var loadRealSchemes = buildDiscoverySection(root);
-    buildDemoAssessPanel(root);
-    buildQASection(root);
-    buildAssistantSection(root);
     buildRecommenderSection(root);
+    buildAssistantSection(root);
+    buildQASection(root);
+    buildDemoAssessPanel(root);
     buildMetricsDashboard(root);
 
-    // Auto-load real scheme catalogue
-    await loadRealSchemes();
+    // Only hide the static prototype when the live scheme API has actually responded.
+    var catalogueAvailable = await loadRealSchemes();
+    if (catalogueAvailable) {
+      document.body.classList.add("hs-live-mode");
+    }
   }
 
   if (document.readyState === "loading") {

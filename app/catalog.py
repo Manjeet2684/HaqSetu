@@ -107,18 +107,26 @@ class SchemeCatalogService:
         self._init_ml_components()
 
     def _init_ml_components(self) -> None:
-        """Initialise P9 AI/ML components (classifier + recommender)."""
+        """Initialise P9 components independently so one failure does not disable both."""
+        self._classifier = None
+        self._recommender = None
+
         try:
             from app.intent_classifier import NaiveBayesIntentClassifier
-            from app.recommender import SchemeRecommender
 
             self._classifier = NaiveBayesIntentClassifier()
+        except Exception:
+            # Keep assistant routing fail-closed if its model or dataset is unavailable.
+            self._classifier = None
+
+        try:
+            from app.recommender import SchemeRecommender
+
             self._recommender = SchemeRecommender(
                 [*self._real_schemes, *self._demo_scenarios]
             )
         except Exception:
-            # ML components are optional; if they fail to load, fall back gracefully
-            self._classifier = None
+            # The recommendation endpoint can report an unavailable index separately.
             self._recommender = None
 
     @property
@@ -277,9 +285,13 @@ class SchemeCatalogService:
         else:
             # Graceful fallback: treat as find_scheme
             intent_pred = IntentPrediction(
-                predicted_intent=IntentClass.FIND_SCHEME,
-                confidence_scores={c.value: 0.0 for c in IntentClass},
-                is_out_of_scope=False,
+                predicted_intent=IntentClass.OUT_OF_SCOPE,
+                confidence_scores={},
+                confidence_notice=(
+                    "The intent classifier is unavailable. HaqSetu did not infer a route; "
+                    "please try again after the service is restored or use the scheme catalogue."
+                ),
+                is_out_of_scope=True,
             )
 
         intent_value = intent_pred.predicted_intent

@@ -40,6 +40,10 @@ DEFAULT_DATASET_PATH = (
 # Smoothing parameter for Laplace / add-alpha smoothing
 _ALPHA = 1.0
 
+# Abstain rather than route very short or ambiguous queries to an arbitrary class.
+_MIN_AMBIGUOUS_CLASS_MARGIN = 0.04
+_MIN_SINGLE_TERM_CLASS_MARGIN = 0.08
+
 
 def _tokenize(text: str) -> list[str]:
     """Lowercase, strip punctuation, remove stopwords; return unigrams."""
@@ -89,7 +93,23 @@ class NaiveBayesIntentClassifier:
         """
         path = Path(dataset_path)
         raw = json.loads(path.read_text(encoding="utf-8"))
-        utterances = raw.get("utterances", [])
+        if not isinstance(raw, dict) or not isinstance(raw.get("utterances"), list):
+            raise ValueError("Intent dataset must contain an 'utterances' list.")
+        utterances = raw["utterances"]
+        if not utterances:
+            raise ValueError("Intent dataset contains no utterances.")
+
+        # Fail clearly on malformed rows instead of silently training a partial model.
+        allowed_intents = {intent.value for intent in IntentClass}
+        for index, item in enumerate(utterances):
+            if not isinstance(item, dict):
+                raise ValueError(f"Intent dataset row {index} must be an object.")
+            text = item.get("text")
+            intent = item.get("intent")
+            if not isinstance(text, str) or not text.strip():
+                raise ValueError(f"Intent dataset row {index} must have non-empty text.")
+            if not isinstance(intent, str) or intent not in allowed_intents:
+                raise ValueError(f"Intent dataset row {index} has an unknown intent label.")
 
         # Collect per-class token counts
         class_counts: Counter[str] = Counter()
@@ -104,6 +124,11 @@ class NaiveBayesIntentClassifier:
             for tok in tokens:
                 class_token_counts[intent][tok] += 1
                 all_tokens.add(tok)
+
+        if not all_tokens:
+            raise ValueError(
+                "Intent dataset contains no usable vocabulary after tokenization."
+            )
 
         self._vocab = frozenset(all_tokens)
         vocab_size = len(self._vocab)
@@ -156,6 +181,20 @@ class NaiveBayesIntentClassifier:
             )
 
         tokens = _tokenize(text)
+        known_tokens = [token for token in tokens if token in self._vocab]
+        if not known_tokens:
+            # Do not force empty, punctuation-only, or wholly unknown text into
+            # an arbitrary class based only on class priors / unknown-token smoothing.
+            return IntentPrediction(
+                predicted_intent=IntentClass.OUT_OF_SCOPE,
+                confidence_scores={},
+                confidence_notice=(
+                    "No recognizable vocabulary from the scholarship-intent model was found. "
+                    "The query was routed to the safe fallback without assigning a model score."
+                ),
+                is_out_of_scope=True,
+            )
+
         log_scores: dict[str, float] = {}
 
         for cls in self._classes:
@@ -167,9 +206,35 @@ class NaiveBayesIntentClassifier:
             log_scores[cls] = log_p
 
         soft_scores = _softmax(log_scores)
+        ranked_scores = sorted(soft_scores.values(), reverse=True)
         best_class = max(soft_scores, key=lambda k: soft_scores[k])
+        top_score = ranked_scores[0] if ranked_scores else 0.0
+        second_score = ranked_scores[1] if len(ranked_scores) > 1 else 0.0
+        class_margin = top_score - second_score
 
-        # Map string class name to IntentClass enum
+        # Short generic terms (for example, just "scholarship" or "marks") and
+        # near-tied class rankings are not enough evidence for automatic routing.
+        # Keep a stronger single-term exception for highly distinctive terms such
+        # as "CPGRAMS", where the top class has a clearly wider margin.
+        has_one_known_term = len(set(known_tokens)) == 1
+        too_ambiguous = class_margin < _MIN_AMBIGUOUS_CLASS_MARGIN
+        single_term_too_ambiguous = (
+            has_one_known_term and class_margin < _MIN_SINGLE_TERM_CLASS_MARGIN
+        )
+        if too_ambiguous or single_term_too_ambiguous:
+            return IntentPrediction(
+                predicted_intent=IntentClass.OUT_OF_SCOPE,
+                confidence_scores={},
+                confidence_notice=(
+                    "The query is too short or ambiguous for a safe intent route. "
+                    "Please add context and ask a complete scholarship-related question. "
+                    + INTENT_CONFIDENCE_NOTICE
+                ),
+                is_out_of_scope=True,
+            )
+
+        # Map string class name to IntentClass enum. The score margin is a routing
+        # heuristic, not a statistical calibration claim.
         try:
             predicted = IntentClass(best_class)
         except ValueError:
